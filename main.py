@@ -1,16 +1,10 @@
-# This is a sample Python script.
-
-# Press Ctrl+F5 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+# selenium 패키지 사용한 동적 웹 크롤링 프로젝트
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press F9 to toggle the breakpoint.
+import dynamic_crawling.crawling_run as dc
 
-
-# Press the green button in the gutter to run the script.
+# 프로젝트 start
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    dc.run()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+
