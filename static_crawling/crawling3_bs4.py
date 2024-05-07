@@ -3,10 +3,10 @@
 
 import urllib.request, bs4, random as rs
 
-# 1. url로 웹페이지에 접속
+# 1. url로 웹페이지에 접속 및 소스 가져오기
 web_page = urllib.request.urlopen('https://search.naver.com/search.naver?where=nexearch&sm=tab_etc&qvt=0&query=%ED%98%84%EC%9E%AC%EC%83%81%EC%98%81%EC%98%81%ED%99%94')
 result_code = bs4.BeautifulSoup(web_page, 'html.parser')
-# print(result_code)
+#print(result_code)
 
 # 개봉영화  정보가 기록된 태그 앨리먼트 찾기
 # 찾아진 태그 앨리먼트 안의 값을 추출 : find() 함수 사용 => 찾은 첫번째 앤리먼트만 리턴함.
@@ -14,81 +14,79 @@ result_code = bs4.BeautifulSoup(web_page, 'html.parser')
 # find(태그속성_='속성값')
 # find(찾을태그명)
 
-# (방법1)
-# 1.1첫번째 항목 한개만 출력
+# 1. find() - 첫번째 항목 추출 및 a 태그 앨리먼트 1개 추출
 data_box = result_code.find("div", {"class":"data_box"})
-# print(data_box)
+#print(data_box)
 movie_title = data_box.find("a", {"class":"this_text"})
-# print(movie_title)
-
-# 1.2 태그 앨리먼트 여러개 추출 : find_all() 사용
-movie_list = result_code.find_all("a", {"class":"this_text"})
-# print(movie_list)
-
-# 영화 제목만 추출
-for idx in range(len(movie_list)):
-    title = movie_list[idx].text
-    # print(title)
-
-# 영화제목, 개봉일, 장르, 별점, 링크 추출
+#print(movie_title)
 
 
+# 2.1 find_all() - a 태그 앨리먼트 여러개 추출 : find_all() 사용
+movie_title_list = result_code.find_all("a", {"class":"this_text"})
+#print(movie_title_list)
+
+# 2.2 영화 제목 추출
+for idx in range(len(movie_title_list)):
+     title = movie_title_list[idx].text
+     #print(title)
 
 
+### 영화제목, 개봉일, 장르, 별점, 링크 추출 #####################
+# 영화정보 div 영역 갯수 확인
+movie_div = result_code.find_all("div", {"class": "data_box"})
+#print(len(movie_div))
 
+# 결과 list에 담기
+movie_list = list()
 
+# 갯수만큼 for 처리
+for idx in range(len(movie_div)):
+    # 영화 제목 추출 - this_text class 내 a 태그 기준 추출 > text 추출
+    movie_title = movie_div[idx].find("a", {"class": "this_text"}).get_text()
+    #movie_title = movie_div[idx].find("a", {"class": "this_text"}).text
+    #print(movie_title)
 
+    # 상세 주소 추출 - this_text class 내 a 태그 기준 추출 > href 값 추출
+    movie_link = movie_div[idx].find("a", {"class": "this_text"}).attrs['href']
+    #movie_link = movie_div[idx].find("a", {"class": "this_text"})['href']
+    #print(movie_link)
 
+    # 장르 추출 - info_group class 내 dl 태그 기준 추출 > dd 태그 기준 추출 > text 추출
+    genre = movie_div[idx].find("dl", {"class": "info_group"}).find("dd").text
+    #print(genre)
 
-# (방법2)
-movie_titles = result_code.select("a.this_text")
+    # 별점 추출 - num class 내 span 가준 추출 > float 처리
+    star_point = float(movie_div[idx].find("span", {"class": "num"}).text)
+    #print(star_point)
 
-movie_list = []
-for i in movie_titles:
+    # 개봉일 추출 - div class=info > dl 2번째 > dd 태그 추출 > 택스트 추출
+    release_date = movie_div[idx].find("div", class_="info").find_all("dl")[1].find("dd").get_text()
+    #print(release_date)
 
-    # title
-    title = i.get_text()
-    # print("title : ", title)
-
-    # link
-    href = "https://search.naver.com/search.naver" + i.attrs['href']
-    # print("link : ", href)
-
-    movie = dict()
-    movie["title"] = title
-    movie["link"] = href
-    movie["star_point"] = rs.uniform(0, 10)
-    movie["genre"] = ""
-    movie["release_date"] = ""
-
-    # # star_point
-    # star_points  = result_code.select("span.num")
-    # for i in star_points:
-    #     star_point = i.get_text()
-    #     print("star_point :  ",star_point)
-    #
-    # # genre
-    # genres_result  = result_code.select("div.info dl.info_group")
-    # for idx in range(len(genres_result)):
-    #     reuslt = genres_result[idx].text
-    #     print(idx, reuslt)
+    movie = dict()  # 결과 딕셔너리에 저장
+    movie["title"] = movie_title
+    movie["link"] = "https://search.naver.com/search.naver" + movie_link
+    movie["genre"] = genre
+    movie["star_point"] = star_point
+    movie["release_date"] = release_date
 
     movie_list.append(movie)
 
-# 리스트에 저장된 영화정보 출력
-for movie in movie_list :
+# 리스트 담긴 내용 확인
+for movie in movie_list:
     print(movie)
 
-# 등수처리 : 별점 이용, 4번째 기록됨 => [3]
-sort_list = sorted(movie_list, key=lambda  x : x["star_point"], reverse=True)
-
-print('=====================')
+# 등수 처리 : 벌점 이용 , 4번째 기록돔 =>[3]
+sort_list = sorted(movie_list, key=lambda x: x["star_point"], reverse=True)
+print('sorted after ---------------------------------')
+print(sort_list)
+print('----------------------------------------------')
 
 # 정렬 후 등수 추가 확인
-for idx in range(len(sort_list)) :
+for idx in range(len(sort_list)):
     movie = sort_list[idx]
-    movie['rank'] = idx + 1
     print(movie)
+    movie['rank'] = idx + 1
 
 # 오라클 db movie 테이블에 기록 처리
 import cx_Oracle
@@ -115,9 +113,9 @@ for movie in movie_list :
 
     try :
         cursor.execute(query, tp_value)
-        conn.commit()
+        dbtemp.commit(conn)
     except :
-        conn.rollback()
+        dbtemp.rollback(conn)
     finally:
         cursor.close()
 
