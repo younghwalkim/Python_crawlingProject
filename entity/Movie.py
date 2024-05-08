@@ -3,13 +3,15 @@
 # 크롤링해서 추출한 영화 정보 저장용 클래스 정의 스크립트.
 
 class Movie:
+
     # filed (attribute) : private (이름 앞에 __ 2개 붙임)
-    rank = 0        # 순위
-    title = ''          # 제목
+
+    rank = 0                # 순위
+    title = ''                 # 제목
     star_point = 0.0    # 평점
     release_date = ''   # 개봉일
-    genre = ''      # 장르
-    link = ''         # 상세페이지 url
+    genre = ''             # 장르
+    link = ''                # 상세페이지 url
 
     # 생성자
     def __init__(self, rank, title, star_point, release_date, genre, link ):
