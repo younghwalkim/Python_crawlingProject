@@ -56,8 +56,12 @@ for idx in range(len(movie_div)):
     #print(genre)
 
     # 별점 추출 - num class 내 span 가준 추출 > float 처리
-    star_point = float(movie_div[idx].find("span", {"class": "num"}).text)
-    #print(star_point)
+    star_point = movie_div[idx].find("span", {"class": "num"})
+    if star_point != None :
+        star_point = float(movie_div[idx].find("span", {"class": "num"}).text)
+    else :
+        star_point = 0.0
+    print(star_point)
 
     # 개봉일 추출 - div class=info > dl 2번째 > dd 태그 추출 > 택스트 추출
     release_date = movie_div[idx].find("div", class_="info").find_all("dl")[1].find("dd").get_text()

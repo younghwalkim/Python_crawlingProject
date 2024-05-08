@@ -41,12 +41,16 @@ import time
 
 import common.dbConnectTemplate as dbtemp
 
+# DB 저장 처리용 모듈
+from model.tour_model import TourModel
+from model.tour import TourInfo
+
 def run():
-    # 크롬드라이버 실행
+    # 1. 크롬 드라이버 실행 (크롬브라우저 실행)
     # driver = wd.Chrome(service=Service('./chromedriver.exe'))
     driver = wd.Chrome()
 
-    # 크롬 드라이버에 url 주소 넣고 실행
+    # 2. 크롬 드라이버에 url 주소 넣고 실행
     main_url = 'https://www.naver.com'
     # main_url = input('연결할 사이트 url 입력 : ')
     driver.get(main_url)
@@ -60,15 +64,15 @@ def run():
     # 검색결과 저장할 리스트
     tour_list = []
 
-    # 접속한 페이지의 검색입력필드 찾아서 검색 키워드 입력해서 실행되게 처리.
+    # 3. 접속한 페이지의 검색입력필드 찾아서 검색 키워드 입력해서 실행되게 처리.
     # 검색필드 태그 (element)는 브라우저 '개발자도구 > Elements' 탭에서 찾음
     # 찾은 앨리먼트 태그에서 마우스 우클릭 > copy > copy selector 선택함.
     # input 태그 id명 : # query
     input_tag = driver.find_element(By.ID, value='query')
-    print(input_tag)
+    # print(input_tag)
     input_tag.send_keys(keyword)    # 검색input 에 로마여행 자동 입력됨.
 
-    # 검색 버튼 클릭 자동
+    # 4. 검색 버튼 클릭 자동
     # button 태그 선택자 복사해 옴 : # sform > fieldset > button
     driver.find_element(By.CSS_SELECTOR, '#sform > fieldset > button').click()
     
@@ -77,21 +81,97 @@ def run():
     # 획득할 데이터가 발견될 때까지 대기시킴
     # 대기방법 : 명시적 대기와 암묵적 대기 2가지 임.
 
-    # 명시적 대기 :  요구한 엘리먼트를 찾을 때까지 대기시킴
+    # 5-1. 명시적 대기 :  요구한 엘리먼트를 찾을 때까지 대기시킴
     # 로마가볼만한 곳 글자 출력될때까지
-    # nxTsOv > div > div.MainContainer._travel_header.MainContainer-vjtko > div.content-qIit7 > div.SummaryTopPoiContainer-qpzcR > div > div.head-xMGxp > div > h3
+    # #nxTsOv > div > div.MainContainer._travel_header.MainContainer-vjtko > div.content-qIit7 > div.SummaryTopPoiContainer-qpzcR > div > div.head-xMGxp > div > h3
     try:
         element = WebDriverWait(driver, timeout=10).until(EC.presence_of_element_located((By.CSS_SELECTOR,'#nxTsOv > div > div.MainContainer._travel_header.MainContainer-vjtko > div.content-qIit7 > div.SummaryTopPoiContainer-qpzcR > div > div.head-xMGxp > div > h3')))
         # 지정한 앨리먼트 위치를 확인하면 대기 종료됨.
     except Exception as msg:
         print('대기 요청 타임 아웃 : ', msg)
 
-    # 암묵적 대기
+    # 5-2 암묵적 대기
     # DOM (document Object Model : 태그 사용 계층 구조) 이 전부 다 브라우저에 로그될 때까지 (모두 읽어들일때까지) 대기하게 하고,
     # 먼저 로드되면 바로 태그 앨리먼트를 찾도록 진행함.
     # 앨리먼트 찾을 시간(초)를 지정하면, 지정 시간동안 DOM 풀링을 지시할 수 있음.
-    driver.implicitly_wait(10)
+    driver.implicitly_wait(20)
 
-    # 절대적 대기 설정
+    # 5-3. 절대적 대기 설정
     # time.sleep(10)
+
+    # 6-1. "가볼만한 곳" 클릭.처리
+    # 로마 > 가볼만한 곳 : 클릭처리 > 아래쪽에 정보가 표시됨.
+    # #nxTsOv > div > div.MainContainer._travel_header.MainContainer-vjtko > div.PanelHeader-vpb6F > div.TabList-Erooo._scroll_wrapper > div.scroll-D9KKR._scroller > ul > li:nth-child(4) > a
+    driver.find_element(By.CSS_SELECTOR, "#nxTsOv > div > div.MainContainer._travel_header.MainContainer-vjtko > div.PanelHeader-vpb6F > div.TabList-Erooo._scroll_wrapper > div.scroll-D9KKR._scroller > ul > li:nth-child(4) > a").click()
+    # time.sleep(10)
+
+    # 6-2. 연습 - "가볼만한곳 더보기" 클릭 처리
+    # #nxTsOv > div > div.MainContainer._travel_header.MainContainer-vjtko > div.content-qIit7 > div > div > div.TopPoi-AF_rQ > div.more-y7DDV > div > a
+    # driver.find_element(By.CSS_SELECTOR, "#nxTsOv > div > div.MainContainer._travel_header.MainContainer-vjtko > div.content-qIit7 > div > div > div.TopPoi-AF_rQ > div.more-y7DDV > div > a").click()
+    #time.sleep(10)
+
+    # 해당 페이지 영역에서 데이터를 가져올 때, 혹시 로그인이 필요한 경우에는 로그인 세션 관리 필요함.
+    # 데이터가 많으면 세션 타임아웃에 의해서 자동 로그아웃 될 수 있으므로,
+    # 특정 단위별로 로그아웃하고, 재로그인하는 처리가 필요함. => loop 문 구동, 일괄적으로 접근 처리 필요 : 메타 정보 획득
+
+    # 7. 가볼만한 곳 항목들 추출
+    item_list = driver.find_elements(By.CLASS_NAME, "TopPoiItem-MgXeO")
+    # print(len(item_list))
+    # print(item_list)
+
+    # 8-1. 가볼만한 곳 항목에서 데이터 추출하기
+    # 순위, 장소이름, 장소설명, 장소구분
+
+    # 8-2. db 저장처리를 위한 객체 생성
+    tm = TourModel()
+
+    # 9. 기존 테이블에 저장된 정보 모두 지우기
+    tm.delete_all()
+
+    for item in item_list:
+        rank = item.find_element(By.CSS_SELECTOR, "a > figure > span").text
+        # print(rank)
+        name = item.find_element(By.CSS_SELECTOR, "a > div > span.subject-G1Fz6 > b.name-icVvV").text
+        # print(name)
+        description = item.find_element(By.CSS_SELECTOR, "a > div > span.desc-tw973").text
+        # print(description)
+        category  = item.find_element(By.CSS_SELECTOR, "a > div > div > span").text
+        # print(category)
+
+        # 튜플로 저장 처리
+        tp_info = (rank, name, description, category)
+
+        # db에 저장 처리
+        tm.insert_tour(tp_info)
+
+    # 10-1. DB에 저장된 정보 조회 출력 확인
+    resultset = tm.select_all()
+
+    # 10-2. 리턴된 정보들을 한행씩 toruinfo  객체에 저장 처리하고, 리스트에 추가
+    tour_list =[]
+    for row in resultset:
+        tourInfo = TourInfo(row[0], row[1], row[2], row[3])
+
+        # 객체정보 출력확인
+        print(tourInfo)
+
+        tour_list.append(tourInfo)
+
+    print(tour_list)
+
+    # 11. 크롬 브라우저 및 드라이버 종료
+    driver.close()
+    driver.quit()
+
+    # 12. main으로 리턴 : 프로세스 종료
+    return
+
+
+
+
+
+
+
+
+
 
